@@ -25,9 +25,9 @@ jobs:
           Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
           "$env:USERPROFILE\scoop\shims" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Add local bucket and install lore-book
+      - name: Install from local manifest and verify
         shell: pwsh
         run: |
-          scoop bucket add localbucket $PWD
-          scoop install localbucket/lore-book
+          scoop install .\bucket\lore-book.json
+          scoop reset lore-book
           lore version
