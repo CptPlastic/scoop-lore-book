@@ -19,7 +19,7 @@
     }
   },
   "pre_install": [
-    "$pkg = \"lore-book==$version\"",
+    "$pkg = \"lore-book==1.3.0\"",
     "python -m pip install --user --upgrade $pkg",
     "Set-Content -Path \"$dir\\lore.cmd\" -Value \"@echo off`r`npython -m lore.cli %*\" -Encoding Ascii"
   ],
