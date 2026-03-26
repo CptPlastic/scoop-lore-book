@@ -6,15 +6,6 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-function Get-NormalizedDistributionName {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Name
-    )
-
-    return ($Name -replace '[-.]+', '_').ToLowerInvariant()
-}
-
 function Update-ArchitectureNode {
     param(
         [Parameter(Mandatory = $true)]
@@ -52,8 +43,6 @@ foreach ($path in $ManifestPath) {
 
     $packageName = $Matches.package
     $version = [string]$manifest.version
-    $normalizedName = Get-NormalizedDistributionName -Name $packageName
-    $firstLetter = $normalizedName.Substring(0, 1)
 
     $pypiResponse = Invoke-RestMethod -Uri $manifest.checkver
     $releaseFiles = @($pypiResponse.releases.$version)
@@ -68,8 +57,20 @@ foreach ($path in $ManifestPath) {
         throw "No source distribution found for $packageName $version"
     }
 
-    $manifestUrl = "https://files.pythonhosted.org/packages/source/$firstLetter/$normalizedName/$normalizedName-$version.tar.gz"
-    $autoupdateUrl = "https://files.pythonhosted.org/packages/source/$firstLetter/$normalizedName/$normalizedName-`$version.tar.gz"
+    $sdistFileName = [string]$sdist.filename
+    $versionMarker = "-$version"
+    $versionIndex = $sdistFileName.LastIndexOf($versionMarker)
+
+    if ($versionIndex -le 0) {
+        throw "Unable to derive distribution name from sdist filename '$sdistFileName' for version '$version'"
+    }
+
+    $distributionName = $sdistFileName.Substring(0, $versionIndex)
+    $firstLetter = $distributionName.Substring(0, 1).ToLowerInvariant()
+    $autoupdateFileName = $sdistFileName.Substring(0, $versionIndex + 1) + '$version' + $sdistFileName.Substring($versionIndex + 1 + $version.Length)
+
+    $manifestUrl = "https://files.pythonhosted.org/packages/source/$firstLetter/$distributionName/$sdistFileName"
+    $autoupdateUrl = "https://files.pythonhosted.org/packages/source/$firstLetter/$distributionName/$autoupdateFileName"
 
     if ($manifest.architecture) {
         foreach ($architectureProperty in $manifest.architecture.PSObject.Properties) {
